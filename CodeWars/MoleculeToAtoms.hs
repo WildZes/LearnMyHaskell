@@ -4,12 +4,19 @@ module MoleculeToAtoms where
 import Data.Char
 
 parseMolecule :: String -> Either String [(String,Int)]
-parseMolecule formula = Left "Not implemented"
+parseMolecule formula = let ans = getAns . expression . tokenizer $ formula
+                        in if foldr ((&&) . (>0) . snd) True ans
+                           then Right ans
+                           else case snd . last $ ans of
+                                     0 -> Left "Not a valid molecule"
+                                     _ -> Left "Mismatched parenthesis"
+                                     
 
 data Token = TokAtom String
            | TokCount Int
            | TokLPar Char
            | TokRPar Char
+           | TokError String
            | TokEnd
            deriving (Show,Eq)
 
@@ -27,7 +34,7 @@ tokenizer (c:cs)
 --TokAtom (c : takeWhile (not . isUpper) cs) : tokenizer (dropWhile (not . isUpper) cs)
   | isDigit c            = let (count,rest) = span isDigit cs
                            in TokCount (read (c:count)) : tokenizer rest
-  | otherwise            = error $ "wrong input" ++ [c]
+  | otherwise            = [TokError "NAVM"]
 
 lookAhead :: String -> Char
 lookAhead [] = '\n'
@@ -46,14 +53,21 @@ expression toks =
        (TokCount _)  -> expression $ tail toks
        (TokLPar par) -> case par of
                              '(' -> let (before,after,num) = parOpen toks ')'
-                                    in expression (parClose (before,num)) ++ expression (drop 2 after)
+                                    in if toksAhead after /= TokRPar ')'
+                                       then [("MP",(-1))]
+                                       else expression (parClose (before,num)) ++ expression (drop 1 after)
                              '[' -> let (before,after,num) = parOpen toks ']'
-                                    in expression (parClose (before,num)) ++ expression (drop 2 after)
+                                    in if toksAhead after /= TokRPar ']'
+                                       then [("MP",(-2))]
+                                       else expression (parClose (before,num)) ++ expression (drop 1 after)
                              '{' -> let (before,after,num) = parOpen toks '}'
-                                    in expression (parClose (before,num)) ++ expression (drop 2 after)
+                                    in if toksAhead after /= TokRPar '}'
+                                       then [("MP",(-3))]
+                                       else expression (parClose (before,num)) ++ expression (drop 1 after)
                              _   -> error "wrong parentheses"
        (TokRPar par) -> error $ "closing bracket should not be here " ++ [par]
        TokEnd        -> expression (tail toks)
+       (TokError "NAVM") -> [("NAVM",0)]
 
 getInt :: Token -> Int
 getInt (TokCount i) = i
