@@ -114,6 +114,9 @@ instance Semigroup (Or a b) where
   Fst _ <> Snd x = Snd x
   x     <> y     = y
 
+--My solution is not so rational and has no quickCheck. For more complete solution it is possible to vistit
+--https://github.com/scarvalhojr/haskellbook/blob/master/chapter15/section15.15.hs
+
 -- 9
 newtype Combine a b = Combine { unCombine :: (a -> b) }
 
@@ -127,6 +130,7 @@ instance Semigroup a => Semigroup (Comp a) where
   (Comp fx) <> (Comp fy) = Comp (fx . fy)
 
 -- 11
+-- I think, that solution is incorrect
 data Validation a b = Failure a | Success b deriving (Eq, Show)
 
 instance Semigroup a => Semigroup (Validation a b) where
@@ -135,6 +139,7 @@ instance Semigroup a => Semigroup (Validation a b) where
   first     <> _         = first
 
 -- 12
+-- I think, that solution might be correct if 11th solution was correct
 newtype AccumulateRight a b = AccumulateRight (Validation a b) deriving (Eq, Show)
 
 instance (Semigroup a, Semigroup b) => Semigroup (AccumulateRight a b) where
@@ -142,6 +147,7 @@ instance (Semigroup a, Semigroup b) => Semigroup (AccumulateRight a b) where
   AccumulateRight first         <> AccumulateRight second        = AccumulateRight (first <> second)
 
 -- 13
+-- I think, that solution might be correct if 11th solution was correct
 newtype AccumulateBoth a b = AccumulateBoth (Validation a b) deriving (Eq, Show)
 
 instance (Semigroup a, Semigroup b) => Semigroup (AccumulateBoth a b) where
